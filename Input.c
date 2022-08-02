@@ -4,6 +4,7 @@ S_Input Input;
 
 void KeyCallback(GLFWwindow *wnd, int key, int scancode, int action, int mods)
 {
+    //Seems to be broken, not sure 
     if (key == GLFW_KEY_ESCAPE)
     {
         Input.Mouse.cursorLocked = 0;
@@ -28,12 +29,19 @@ void KeyCallback(GLFWwindow *wnd, int key, int scancode, int action, int mods)
 }
 
 void CursorPosCallback(GLFWwindow *wnd, double xPos, double yPos)
-{    
-    Input.Mouse.prevPos = Input.Mouse.Pos;
-    Input.Mouse.Pos.x = xPos;
-    Input.Mouse.Pos.y = yPos;
+{
+    Input.Mouse.XPos = xPos;
+    Input.Mouse.YPos = yPos;
+}
+
+void MouseInputProcessing()
+{
+    Input.Mouse.prevPos.x = Input.Mouse.Pos.x;
+    Input.Mouse.prevPos.y = Input.Mouse.Pos.y;
+    Input.Mouse.Pos.x = Input.Mouse.XPos;
+    Input.Mouse.Pos.y = Input.Mouse.YPos;
     Input.Mouse.Delta.x = Input.Mouse.Pos.x - Input.Mouse.prevPos.x;
-    Input.Mouse.Delta.y = Input.Mouse.Pos.y - Input.Mouse.prevPos.y;
+    Input.Mouse.Delta.y = Input.Mouse.Pos.y - Input.Mouse.prevPos.y;    
 }
 
 void MouseButtonCallback(GLFWwindow *wnd, int button, int action, int mode)
@@ -41,9 +49,9 @@ void MouseButtonCallback(GLFWwindow *wnd, int button, int action, int mode)
     if (button == 0)
     {
         Input.Mouse.cursorLocked = 1;
-        glfwSetInputMode(wnd, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+        glfwSetInputMode(wnd, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
-    
+
     if (action == GLFW_PRESS)
     {
         Input.Mouse.Down[button] = 1;

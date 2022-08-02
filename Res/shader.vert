@@ -39,10 +39,11 @@ void main()
 	//gl_Position = vec4(Pos,1.0)* Camera *Projection;
 	
 	vec4 pos = vec4(iPos,1.0);
-	pos =  rotMat(vec3(0,iTime / 2.0,0)) * pos;
+	//pos =  rotMat(vec3(0,iTime / 2.0,0)) * pos;
 	//pos = World * pos ;
-	pos = Camera *pos;
-	pos = Projection *pos;
+	pos = Camera * pos;
+    //pos = transpose(Camera) * pos;
+	pos = Projection * pos;
 	gl_Position = pos;
 	
 	oUV = iUV;

@@ -35,7 +35,7 @@ void main()
 	vec4 col = vec4(texture(tex,UV).xyz,1.0) ;
     //col += col1 ;
 
-    vec3 sun = vec3(0,1,1);
+    //vec3 sun = vec3(0,1,1);
     //col *= max(.1, dot(Norm,sun));
   
     

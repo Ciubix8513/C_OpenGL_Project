@@ -2,6 +2,7 @@
 #define _SYSTEM_H_
 #include "Graphics.h"
 #include "Input.h"
+#include "FreeCamera.h"
 int Start();
 
 int Init();

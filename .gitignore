@@ -3,6 +3,11 @@
 .vscode/settings.json
 .vscode/targets.log
 
+matrixTest.c
+
 main
+test
+test.sh
+tests
 converter
 *.o
