@@ -16,12 +16,13 @@ int Start()
 
 int Init()
 {
-
 	InitWindow(720, 1080, "C OpenGL test");
 	glfwSetWindowSizeCallback(wnd, WindowResizeCallback);
 	glfwSetKeyCallback(wnd,KeyCallback);
 	glfwSetCursorPosCallback(wnd,CursorPosCallback);
 	glfwSetMouseButtonCallback(wnd,MouseButtonCallback);
+	SetupCamera();
+	
 	return InitOpenGL();
 	return 1;
 }
@@ -37,13 +38,16 @@ void Frame()
 	printf("First frame\n");
 	while (!glfwWindowShouldClose(wnd))
 	{
+		
 		ResetKeyUp();
 		ResetMouseUp();
 		Render();		
 		glfwSwapBuffers(wnd);
 		glfwPollEvents();
-		if(Input.Mouse.cursorLocked)
-			glfwSetCursorPos(wnd,res.x / 2,res.y / 2);
+		MouseInputProcessing();
+		UpdateCamera();
+		// if(Input.Mouse.cursorLocked)
+		// 	glfwSetCursorPos(wnd,res.x / 2,res.y / 2);
 	}
 }
 
