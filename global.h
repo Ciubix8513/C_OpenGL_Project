@@ -2,7 +2,7 @@
 #define _GLOBAL_H_
 #include <GLFW/glfw3.h>
 
-#define UINT unsigned int
+#define uint unsigned int
 // I know this is probably some shitty design but idk
 
 #pragma pack(push, 1)
@@ -40,7 +40,6 @@ typedef struct mat4
 #define PI 3.14159265f
 #define deg2rad PI / 180.0f
 
-
 #pragma region _INPUT_H_
 typedef struct S_Mouse
 {
@@ -52,8 +51,10 @@ typedef struct S_Mouse
 	vec2 prevPos;
 	vec2 Pos;
 	vec2 Delta;
+	vec2 ScrollDelta;
 
-	int XPos,YPos;
+	int XPos, YPos;
+	double wheelX, wheelY;
 } S_Mouse;
 
 typedef struct S_Input
@@ -67,31 +68,76 @@ typedef struct S_Input
 } S_Input;
 extern S_Input Input;
 #pragma endregion
-#pragma region _GRPAPHICS_H_
-typedef struct Camera
+#pragma region _GRAPHICS_H_
+typedef struct Transform
 {
 	vec3 position;
 	vec3 rotation;
+	vec3 scale;
+}Transform;
+typedef struct Camera
+{
+	Transform transform;
 	float FOV;
 	float ScreenNear;
 	float ScreenFar;
+	float speed;
 } Camera;
+typedef struct Material
+{
+	uint ShaderProg;
+	char *vFileName,* fFileName;
+	void (*LoadData)(struct Material*);
+	// Arrays
+	int *intArr;
+	size_t intArrSize;
+
+	float *floatArr;
+	size_t floatArrSize;
+
+	vec2 *float2Arr;
+	size_t float2ArrSize;
+
+	vec3 *float3Arr;
+	size_t float3ArrSize;
+
+	vec4 *float4Arr;
+	size_t float4ArrSize;
+
+	mat4 *mat4Arr;
+	size_t mat4ArrSize;
+
+	uint *samplerArr;
+	size_t samplerArrSize;
+
+} Material;
+
+typedef struct Model
+{
+	Transform transform;
+	char state;
+	uint VBO, VAO, EBO, ind_size;
+	Material* material;
+	
+
+} Model;
+
+extern Material* materials;
+extern size_t materialsSize;
 
 extern Camera FreeCam;
-
 extern GLFWwindow *wnd;
-extern UINT VBO;
-extern UINT VAO;
-extern UINT EBO;
-extern UINT texture;
-extern UINT ind_size;
+
+// extern uint texture;
+// extern Model mdl;
+
 extern long long prevTime;
+extern uint ShaderProg;
+
 extern double dT;
 extern long long startT;
-extern mat4 proj, camera;
+//extern mat4 proj, camera;
 extern vec2 res;
-extern Camera cam;
-extern UINT ShaderProg;
-extern unsigned int *ind;
 #pragma endregion
+
 #endif

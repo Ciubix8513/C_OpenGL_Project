@@ -4,7 +4,7 @@ layout(location = 1)in vec3 Norm;
 layout(location = 0)out vec4 FragColor;
 layout(location = 4) uniform vec2 iRes;
 
-
+uniform sampler2D tex;
 
 vec4 getCol(float coord,int ColNum)
 { 
@@ -28,7 +28,7 @@ vec4 getCol(float coord,int ColNum)
 
 void main()
 {
-	vec4 col = vec4(1);
+	vec4 col = texture2D(tex,UV); 
     vec3 sun = vec3(0,1,-1);
     col *= max(.2, dot(Norm,sun));
   

@@ -1,34 +1,32 @@
 #include "Graphics.h"
 
+Material *materials;
+size_t materialsSize;
+
+Model *models;
+size_t modelsSize;
+
 GLFWwindow *wnd;
-UINT VBO, VAO, EBO, texture, ind_size;
 long long prevTime, startT;
 double dT;
-mat4 proj, camera;
 vec2 res;
-Camera cam;
-UINT ShaderProg;
-unsigned int *ind;
+
+void TestFunc(Material);
 
 int InitOpenGL()
 {
 	glewInit();
 	glClearColor(0.257f, .711f, .957f, 1.0f);
+
 	// Set up viewport
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glfwSwapBuffers(wnd);
 
-	setUpModel();
+	int s = SetupMaterials();
+	int s3 = SetupModels();
 
-	cam.FOV = 90.0f;
-	cam.ScreenNear = .1f;
-	cam.ScreenFar = 100.0f;
-	cam.position = Vec3(0, -3, -15);
-	cam.rotation = Vec3(0, 0, 0);
-	int s = setupShaders();
-	int s1 = setupTexture();
 	startT = getTick();
 	int w, h;
 	glfwGetWindowSize(wnd, &w, &h);
@@ -36,32 +34,72 @@ int InitOpenGL()
 	res = Vec2(w, h);
 
 	glEnable(GL_MULTISAMPLE);
-	return s && s1;
+	return s && s3;
 }
 
-void setUpModel()
+int SetupModels()
+{
+	modelsSize = 2;
+	models = calloc(modelsSize, sizeof(Model));
+
+	models[0].transform.position = Vec3(0,2,0);
+	models[0].transform.scale = Vec3(1,1,1);
+	models[0].transform.rotation = Vec3(0,0,0);
+	models[0].material = materials;
+
+	models[1].transform.position = Vec3(0,0,0);
+	models[1].transform.scale = Vec3(1,1,1);
+	models[1].transform.rotation = Vec3(0,0,0);
+	models[1].material = materials + 1;
+	//  TODO add model filename to the struct and make it similar to the shader setup
+	return LoadModel("Res/blahaj1.mdl", &models[0]) && LoadModel("Res/Ground.mdl", &models[1]);
+}
+int SetupMaterials()
+{
+	// Manual setup (for now at least)
+	materialsSize = 2;
+	materials = calloc(materialsSize, sizeof(Material));	
+
+	materials[0].vFileName = "Res/shader.vert";
+	materials[1].vFileName = "Res/shader.vert";
+
+	materials[0].fFileName = "Res/texture.frag\0";
+	materials[1].fFileName = "Res/shader.frag";
+
+	materials[0].LoadData = &LoadTextureShaderData;
+	materials[1].LoadData = &LoadShaderData;
+
+	materials[0].samplerArrSize = 1;
+	materials[0].samplerArr = calloc(materials[0].samplerArrSize, sizeof(uint));
+	printf("Setting up shaders\n");
+	for (size_t i = 0; i < materialsSize; i++)
+		if (!setupShader(&materials[i]))
+			return 0;
+	setupTexture("Res/blahaj.bmp", materials[0].samplerArr);
+	return 1;
+	
+}
+
+int LoadModel(const char *filename, Model *model)
 {
 	Mesh m;
-	if (!LoadMDL("Res/blahaj.mdl", &m))
+	if (!LoadMDL(filename, &m))
 	{
 		printf("could not load model\n");
-		return;
+		return 0;
 	}
 
-	// printf("Model:\natr = %i\nnumInd = %i\nnumVert = %i\n",m.atr,m.numIndices,m.numVertices);
-	VAO = 0;
+	glGenBuffers(1, &model->VBO);
+	glGenBuffers(1, &model->EBO);
+	glGenVertexArrays(1, &model->VAO);
 
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
-	glGenVertexArrays(1, &VAO);
-
-	glBindVertexArray(VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBindVertexArray(model->VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, model->VBO);
 	glBufferData(GL_ARRAY_BUFFER, m.numVertices * sizeof(Vertex), m.vertices, GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m.numIndices * sizeof(unsigned int), m.Indices, GL_STATIC_DRAW);
-	ind_size = m.numIndices;
+	model->ind_size = m.numIndices;
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, Position));
@@ -74,51 +112,49 @@ void setUpModel()
 
 	free(m.vertices);
 	free(m.Indices);
+	return 1;
 }
 
-int setupShaders()
+int setupShader(Material *material)
 {
-	UINT frag = 0;
-	UINT vert = 0;
+	FILE *f = fopen(material->vFileName, "r");
 
-	char *vPath = "Res/shader.vert";
-	char *fPath = "Res/shader.frag";
-	FILE *f;
-
-	f = fopen(vPath, "r");
-	// if (fopen_s(&f, vPath, "r") != 0)
 	if (f == NULL)
+	{
+		printf("Was not able to open %s\n", material->vFileName);
 		return 0;
+	}	
 	fseek(f, 0, SEEK_END);
 	int l = ftell(f);
 	rewind(f);
-
+	
 	char *vFile = malloc(l);
-	// ZeroMemory(vFile, l);
 	memset(vFile, 0, l);
 	fread(vFile, 1, l, f);
-
+	
 	fclose(f);
-	vert = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vert, 1, &vFile, &l);
-	free(vFile);
-	// glShaderSource()
-	// if (fopen_s(&f, fPath, "r") != 0)
-	f = fopen(fPath, "r");
+	vFile[l] = '\0';	
+	uint vert = glCreateShader(GL_VERTEX_SHADER);	
+	glShaderSource(vert, 1,&vFile, NULL);
+	free(vFile);	
+	
+	f = fopen(material->fFileName, "r");
 	if (f == NULL)
+	{
+		printf("Was not able to open %s\n", material->fFileName);
 		return 0;
+	}
 
 	fseek(f, 0, SEEK_END);
 	l = ftell(f);
 	rewind(f);
 
 	char *fFile = malloc(l);
-	// ZeroMemory(fFile, l);
 	memset(fFile, 0, l);
 	fread(fFile, 1, l, f);
 
 	fclose(f);
-	frag = glCreateShader(GL_FRAGMENT_SHADER);
+	uint frag = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(frag, 1, &fFile, &l);
 	free(fFile);
 	glCompileShader(vert);
@@ -136,7 +172,6 @@ int setupShaders()
 		free(log);
 
 		return 0;
-		// glDeleteShader( vert);
 	}
 	glCompileShader(frag);
 	glGetShaderiv(frag, GL_COMPILE_STATUS, &Comp);
@@ -151,17 +186,16 @@ int setupShaders()
 		printf("frag Log = %s", log);
 		free(log);
 		return 0;
-		// glDeleteShader( frag);
 	}
 
-	ShaderProg = glCreateProgram();
-	glAttachShader(ShaderProg, vert);
-	glAttachShader(ShaderProg, frag);
+	material->ShaderProg = glCreateProgram();
+	glAttachShader(material->ShaderProg, vert);
+	glAttachShader(material->ShaderProg, frag);
 
-	glLinkProgram(ShaderProg);
+	glLinkProgram(material->ShaderProg);
 
-	glDetachShader(ShaderProg, vert);
-	glDetachShader(ShaderProg, frag);
+	glDetachShader(material->ShaderProg, vert);
+	glDetachShader(material->ShaderProg, frag);
 
 	glDeleteShader(vert);
 	glDeleteShader(frag);
@@ -169,11 +203,11 @@ int setupShaders()
 	return 1;
 }
 
-int setupTexture()
+int setupTexture(const char *filename, uint *texture)
 {
 
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	glGenTextures(1, texture);
+	glBindTexture(GL_TEXTURE_2D, *texture);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -200,48 +234,36 @@ int setupTexture()
 
 void Render()
 {
-	glClearColor(0.257f, .711f, .957f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glUseProgram(ShaderProg);
-
-	proj = PerspectiveProj(cam.FOV, res.x / res.y, cam.ScreenNear, cam.ScreenFar);
-	// proj = PerspectiveGLU(cam.FOV, res.x / res.y, cam.ScreenNear, cam.ScreenFar);
-	//  camera = LookAt(Vec3(0,0,-5),Vec3(0,0,1),Vec3(0,1,0));//LookAtcam(FreeCam);//(Vec3(0, -.5f, 2.5f), Vec3(0, 0, 1), Vec3(0, 1, 0));
-	//  camera = Mat4m(
-	//  	1,0,0,0,
-	//  	0, 1, 0, 0,
-	//  	0,0,1,0,
-	//  	0,0,5,1
-	//  );
-	camera = TransformMat(minusVec(FreeCam.position), minusVec(FreeCam.rotation), Vec3(1, 1, 1)); // LookAtcam(FreeCam);
-	camera = LookAtCam(FreeCam);
-	// camera = Mat4m(
-	// 	0.573576, 0 , 0.81915, 0,
-	// 	0, 1, 0, 0,
-	// 	-0.8192, 0 , 0.5735, 5,
-	// 	0,0,0,1
-	// );
-
-	glUniformMatrix4fv(0, 1, 0, &proj);
-	glUniformMatrix4fv(1, 1, 0, &camera);
-
 	long long cTime = getTick();
 	long long t = cTime - startT;
-	glUniform1f(3, t / 1000.0f);
 
-	glUniform2fv(4, 1, &res);
-	// mat4 i
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	glClearColor(0.257f, .711f, .957f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	mat4 proj = PerspectiveProj(FreeCam.FOV, res.x / res.y, FreeCam.ScreenNear, FreeCam.ScreenFar);
+	mat4 camera = LookAtCam(FreeCam);
+
+	//glUniform1f(3, t / 1000.0f);
+
+	for (size_t i = 0; i < modelsSize; i++)
+	{
+		
+		glUseProgram(models[i].material->ShaderProg);
+		mat4 world = STransformMat(&models[i].transform);
+
+
+		glUniformMatrix4fv(0, 1, 0, &proj);
+		glUniformMatrix4fv(1, 1, 0, &camera);
+		glUniformMatrix4fv(2, 1, 1, &world);
+
+		models[i].material->LoadData(models[i].material);
+		glBindVertexArray(models[i].VAO);
+
+		glDrawElements(GL_TRIANGLES, models[i].ind_size, GL_UNSIGNED_INT, 0);
+	}
 
 	dT = (cTime - prevTime) / 1000;
 	prevTime = cTime;
-	// printf("dT = %i\n", dT);
-	glBindVertexArray(VAO);
-	// glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glDrawElements(GL_TRIANGLES, ind_size, GL_UNSIGNED_INT, 0);
-
-	//	SwapBuffers(dc);
 }
 
 int InitWindow(int height, int width, char *title)
@@ -275,10 +297,38 @@ uint32_t getTick()
 
 void Cleanup()
 {
-	glDeleteTextures(1, &texture);
-	glDeleteBuffers(1, &VBO);
-	glDeleteBuffers(1, &EBO);
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteProgram(ShaderProg);
+	// Cleanup materials
+	for (size_t i = 0; i < materialsSize; i++)
+	{		
+		glDeleteTextures(materials[i].samplerArrSize, materials[i].samplerArr);		
+		glDeleteProgram(materials[i].ShaderProg);			
+		free(materials[i].intArr);
+		free(materials[i].floatArr);
+		free(materials[i].float2Arr);
+		free(materials[i].float3Arr);
+		free(materials[i].float4Arr);
+		free(materials[i].mat4Arr);
+	}
+
+	for (size_t i = 0; i < modelsSize; i++)
+	{
+		glDeleteBuffers(1, &models[i].VBO);
+		glDeleteBuffers(1, &models[i].EBO);
+		glDeleteVertexArrays(1, &models[i].VAO);
+	}
+	free(models);
+	free(materials);
+
 	glfwTerminate();
+}
+
+void LoadTextureShaderData(Material *self)
+{
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE0, self->samplerArr[0]);
+}
+
+void LoadShaderData(Material *self)
+{
+	return;
 }

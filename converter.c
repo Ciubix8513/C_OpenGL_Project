@@ -3,9 +3,10 @@
 
 int main(int argc,char** argv)
 {
-    if(argc < 2)
+    if(argc < 3)
     {
-        printf("Wrong number of arguments\n");
+        printf("Usage:\nconverter -i file.obj -o file.mdl\n");
+
         return 1;
     }
     int opt;

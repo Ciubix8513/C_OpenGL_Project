@@ -6,8 +6,9 @@ void SetupCamera()
     FreeCam.FOV = 60;
     FreeCam.ScreenFar = 1000;
     FreeCam.ScreenNear = 0.1f;
-    FreeCam.position = Vec3(0, 0, -5);
-    FreeCam.rotation = Vec3(0, 0, 0);
+    FreeCam.transform.position = Vec3(0, 2, -5);
+    FreeCam.transform.rotation = Vec3(0, 0, 0);
+    FreeCam.speed = 0.1f;
 }
 
 void UpdateCamera()
@@ -15,27 +16,29 @@ void UpdateCamera()
     if (Input.Mouse.cursorLocked)
     {
         float mouseSens = 0.05f;
-        FreeCam.rotation.x += Input.Mouse.Delta.y * mouseSens;
-        FreeCam.rotation.y += Input.Mouse.Delta.x * mouseSens;
+        FreeCam.transform.rotation.x += Input.Mouse.Delta.y * mouseSens;
+        FreeCam.transform.rotation.y += Input.Mouse.Delta.x * mouseSens;
         vec4 Ivec = Vec4(0, 0, 0, 1);
-        float speed = 0.02f;
-        if(glfwGetKey(wnd, GLFW_KEY_LEFT_SHIFT))
-        speed *=2;
+
+        FreeCam.speed = Clamp(FreeCam.speed + Input.Mouse.ScrollDelta.y * .01f, .05f, 0.2f);
+        float s = FreeCam.speed;
+        if (glfwGetKey(wnd, GLFW_KEY_LEFT_SHIFT))
+            s *= 2;        
         if (glfwGetKey(wnd, GLFW_KEY_W))
-            Ivec.z += speed;
+            Ivec.z += s;
         if (glfwGetKey(wnd, GLFW_KEY_S))
-            Ivec.z -= speed;
+            Ivec.z -= s;
         if (glfwGetKey(wnd, GLFW_KEY_D))
-            Ivec.x += speed;
+            Ivec.x += s;
         if (glfwGetKey(wnd, GLFW_KEY_A))
-            Ivec.x -= speed;
-        if (glfwGetKey(wnd, GLFW_KEY_E))
-            Ivec.y += speed;
-        if (glfwGetKey(wnd, GLFW_KEY_Q))
-            Ivec.y -= speed;
-        Ivec = MultMatVec(Ivec, RotMatrix(FreeCam.rotation));
-        FreeCam.position.x += Ivec.x;
-        FreeCam.position.y += Ivec.y;
-        FreeCam.position.z += Ivec.z;
+            Ivec.x -= s;
+        if (glfwGetKey(wnd, GLFW_KEY_E) || glfwGetKey(wnd,GLFW_KEY_SPACE))
+            Ivec.y += s;
+        if (glfwGetKey(wnd, GLFW_KEY_Q)|| glfwGetKey(wnd,GLFW_KEY_LEFT_CONTROL))
+            Ivec.y -= s;
+        Ivec = MultMatVec(Ivec, RotMatrix(FreeCam.transform.rotation));
+        FreeCam.transform.position.x += Ivec.x;
+        FreeCam.transform.position.y += Ivec.y;
+        FreeCam.transform.position.z += Ivec.z;
     }
 }

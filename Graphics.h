@@ -24,12 +24,19 @@
 int InitWindow(int height, int width,char * title);
 int InitOpenGL();
 
-void setUpModel();
-int setupShaders();
-int setupTexture();
+int SetupModels();
+int SetupMaterials();
+
+int LoadModel(const char* filename, Model* model);
+int setupShader(Material* material);
+int setupTexture(const char* filename, uint* texture);
 void Render();
 
 void Cleanup();
+
+void LoadTextureShaderData(Material *self);
+void LoadShaderData(Material *self);
+
 
 uint32_t getTick();
 

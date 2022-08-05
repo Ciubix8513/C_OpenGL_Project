@@ -1,5 +1,14 @@
 #include "Math.h"
 
+float Clamp(float x, float min, float max)
+{
+	if (x < min)
+		return min;
+	if (x > max)
+		return max;
+	return x;
+}
+
 vec3 Vec3(float a, float b, float c)
 {
 	vec3 v;
@@ -43,7 +52,6 @@ vec3 minusVec(vec3 v)
 	v.z *= -1;
 	return v;
 }
-
 
 float dotV3(vec3 a, vec3 b)
 {
@@ -159,11 +167,11 @@ mat4 LookAt(vec3 eye, vec3 at, vec3 up)
 
 mat4 LookAtCam(Camera cam)
 {
-	mat4 camRot = RotMatrix(cam.rotation);
+	mat4 camRot = RotMatrix(cam.transform.rotation);
 	vec4 at = MultMatVec(Vec4(0, 0, 1, 1), camRot);
 	vec4 up = MultMatVec(Vec4(0, 1, 0, 1), camRot);
-	//printf("At: %f,%f,%f; Up: %f,%f,%f\n",at.x,at.y,at.z,up.x,up.y,up.z);
-	return LookAt(cam.position,  addV3(cam.position, Vec3(at.x, at.y, at.z)), Vec3(up.x, up.y, up.z));
+	// printf("At: %f,%f,%f; Up: %f,%f,%f\n",at.x,at.y,at.z,up.x,up.y,up.z);
+	return LookAt(cam.transform.position, addV3(cam.transform.position, Vec3(at.x, at.y, at.z)), Vec3(up.x, up.y, up.z));
 }
 
 mat4 RotMatrix(vec3 rot)
@@ -256,7 +264,7 @@ float Det(mat4 M)
 		   M.m01 * M.m10 * M.m22 * M.m33 + M.m00 * M.m11 * M.m22 * M.m33;
 }
 
-//Doesn't work currently, might fix later
+// Doesn't work currently, might fix later
 mat4 InvertMat(mat4 This)
 {
 
@@ -298,31 +306,31 @@ mat4 TransformMat(vec3 pos, vec3 r, vec3 s)
 	// scale.m00 = s.x;
 	// scale.m11 = s.x;
 	// scale.m22 = s.x;
-	//scale.m33 = 1;
-	//return MultMat(MultMat(scale, rot), trans);
-	return MultMat(MultMat(scale,rot),trans);
+	// scale.m33 = 1;
+	// return MultMat(MultMat(scale, rot), trans);
+	return MultMat(MultMat(scale, rot), trans);
 }
 
-//Made using wolfram Alpha, i would've never been able to do something like this
-mat4 STransformMat(vec3 po, vec3 r, vec3 sc)
+// Made using wolfram Alpha, i would've never been able to do something like this
+mat4 STransformMat(const Transform* t)
 {
-	r.x *= deg2rad;
-	r.y *= deg2rad;
-	r.z *= deg2rad;
-	float 
-	x = sc.x, y = sc.y, z = sc.z,
-	m = po.x, n = po.y, p = po.z,	
-	sX = sin(r.x),sY = sin(r.y),sZ = sin(r.z),
-	cX = cos(r.x),cY = cos(r.y),cZ = cos(r.z);
-
+	float X =  t->rotation.x * deg2rad;
+	float Y =  t->rotation.y * deg2rad;
+	float Z =  t->rotation.z * deg2rad;
+	
+	float
+		x = t->scale.x,
+		y = t->scale.y, z = t->scale.z,
+		m = t->position.x, n = t->position.y, p = t->position.z,
+		sX = sin(X), sY = sin(Y), sZ = sin(Z),
+		cX = cos(X), cY = cos(Y), cZ = cos(Z);
 
 	return Mat4m(
-		 x*cY*cZ, x*(sX*sY*cZ - cX*sZ), x*(cX*sY*cZ + sX*sZ), m*x*cY*cZ + n*x*(sX*sY*cZ - cX*sZ) + p*x*(cX*sY*cZ + sX*sZ),
-		 y*cY*sZ, y*(sX*sY*sZ + cX*cZ), y*(cX*sY*sZ - sX*cZ), m*y*cY*sZ + n*y*(sX*sY*sZ + cX*cZ) + p*y*(cX*sY*sZ - sX*cZ),
-		-z*sY, z*sX*cY, z*cX*cY, -m*z*sY + n*z*sX*cY + p*z*cX*cY,
-		 0, 0, 0, 1);
+		x * cY * cZ, x * (sX * sY * cZ - cX * sZ), x * (cX * sY * cZ + sX * sZ), m * x * cY * cZ + n * x * (sX * sY * cZ - cX * sZ) + p * x * (cX * sY * cZ + sX * sZ),
+		y * cY * sZ, y * (sX * sY * sZ + cX * cZ), y * (cX * sY * sZ - sX * cZ), m * y * cY * sZ + n * y * (sX * sY * sZ + cX * cZ) + p * y * (cX * sY * sZ - sX * cZ),
+		-z * sY, z * sX * cY, z * cX * cY, -m * z * sY + n * z * sX * cY + p * z * cX * cY,
+		0, 0, 0, 1);
 }
-
 
 // mat4 STransformMatB(vec3 pos, vec3 r, vec3 s)
 // {
@@ -331,7 +339,6 @@ mat4 STransformMat(vec3 po, vec3 r, vec3 sc)
 // 	sX = sin(r.x),sY = sin(r.y),sZ = sin(r.z),
 // 	cX = cos(r.x),cY = cos(r.y),cZ = cos(r.z);
 
-
 // 	return Mat4m(
 // 		 x * cos(r.y) * cos(r.z), x * (sin(r.x) * sin(r.y) * cos(r.z) - cos(r.x) * sin(r.z)), x * (cos(r.x) * sin(r.y) * cos(r.z) + sin(r.x) * sin(r.z)), m * x * cos(r.y) * cos(r.z) + n * x * (sin(r.x) * sin(r.y) * cos(r.z) - cos(r.x) * sin(r.z)) + p * x * (cos(r.x) * sin(r.y) * cos(r.z) + sin(r.x) * sin(r.z)),
 // 		 y * cos(r.y) * sin(r.z), y * (sin(r.x) * sin(r.y) * sin(r.z) + cos(r.x) * cos(r.z)), y * (cos(r.x) * sin(r.y) * sin(r.z) - sin(r.x) * cos(r.z)), m * y * cos(r.y) * sin(r.z) + n * y * (sin(r.x) * sin(r.y) * sin(r.z) + cos(r.x) * cos(r.z)) + p * y * (cos(r.x) * sin(r.y) * sin(r.z) - sin(r.x) * cos(r.z)),
@@ -339,13 +346,12 @@ mat4 STransformMat(vec3 po, vec3 r, vec3 sc)
 // 		 0, 0, 0, 1);
 // }
 
-mat4 PerspectiveGLU(float fov,float aspect, float near,float far)
+mat4 PerspectiveGLU(float fov, float aspect, float near, float far)
 {
 	float f = cos(fov / 2) / sin(fov / 2);
 	return Mat4m(
-		f / aspect, 0,0,0,
-		0,f,0,0,
-		0,0,(far + near) / (near + far), (2 * far * near) / (near - far),
-		0,0,-1,0
-	);
+		f / aspect, 0, 0, 0,
+		0, f, 0, 0,
+		0, 0, (far + near) / (near + far), (2 * far * near) / (near - far),
+		0, 0, -1, 0);
 }

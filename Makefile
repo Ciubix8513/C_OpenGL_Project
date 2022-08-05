@@ -18,7 +18,5 @@ Input: Input.c Input.h global.h
 	$(CC)	-c -o $@
 Math: Math.c Math.h global.h
 	$(CC)	-c -o $@
-
-
 clean:
 	$(RM) -rf *.o *.dYSM	

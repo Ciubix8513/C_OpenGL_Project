@@ -3,6 +3,8 @@
 #include <math.h>
 #include "global.h"
 
+float Clamp(float x,float min, float max);
+
 vec3 Vec3(float a, float b, float c);
 float LenV3(vec3 v);
 vec3 NormalizedV3(vec3 v);
@@ -41,9 +43,10 @@ float Det(mat4 M);
 mat4 InvertMat(mat4 M);
 
 mat4 TransformMat(vec3 pos,vec3 rot, vec3 scale);
-mat4 STransformMat(vec3 pos,vec3 rot, vec3 scale);
+mat4 STransformMat(const Transform* t);
 mat4 STransformMatB(vec3 pos,vec3 rot, vec3 scale);
-
 mat4 PerspectiveGLU(float fov,float aspect, float near,float far);
+
+
 
 #endif

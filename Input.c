@@ -2,14 +2,30 @@
 
 S_Input Input;
 
+void ScrollCallback(GLFWwindow *wnd, double xOffset, double yOffset)
+{
+    Input.Mouse.wheelX = xOffset;
+    Input.Mouse.wheelY = yOffset;
+    printf("offset: %f,%f\n", xOffset, yOffset);
+}
+
+void ScrollProcessing()
+{
+    Input.Mouse.ScrollDelta.x = Input.Mouse.wheelX;
+    Input.Mouse.ScrollDelta.y = Input.Mouse.wheelY;
+    Input.Mouse.wheelX = 0;
+    Input.Mouse.wheelY = 0;
+}
+
 void KeyCallback(GLFWwindow *wnd, int key, int scancode, int action, int mods)
 {
-    //Seems to be broken, not sure 
+    // Seems to be broken, not sure
     if (key == GLFW_KEY_ESCAPE)
     {
         Input.Mouse.cursorLocked = 0;
         glfwSetInputMode(wnd, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
+    
     switch (action)
     {
     case GLFW_PRESS:
@@ -41,7 +57,7 @@ void MouseInputProcessing()
     Input.Mouse.Pos.x = Input.Mouse.XPos;
     Input.Mouse.Pos.y = Input.Mouse.YPos;
     Input.Mouse.Delta.x = Input.Mouse.Pos.x - Input.Mouse.prevPos.x;
-    Input.Mouse.Delta.y = Input.Mouse.Pos.y - Input.Mouse.prevPos.y;    
+    Input.Mouse.Delta.y = Input.Mouse.Pos.y - Input.Mouse.prevPos.y;
 }
 
 void MouseButtonCallback(GLFWwindow *wnd, int button, int action, int mode)
