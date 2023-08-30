@@ -1,37 +1,83 @@
 #version 450
 layout(location = 0)in vec2 UV;
 layout(location = 1)in vec3 Norm;
+layout(location = 2)in vec3 Pos;
+
 layout(location = 0)out vec4 FragColor;
-layout(location = 4) uniform vec2 iRes;
+
+layout(location = 3)uniform vec3 camPos;
+
+struct dirLight{
+    vec3 dir;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+
+struct PointLight{
+    vec3 position;
+    float constant;
+    float linear;
+    float quadratic;
+
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
 
 
+layout(location = 4) uniform int LightNum;
+layout(std140,binding = 0) uniform dL{
+    dirLight DirLight;
+};
+layout(std430, binding = 0) buffer Lights
+{
+    PointLight lights[];
+};
 
-vec4 getCol(float coord,int ColNum)
-{ 
-   
-   vec4[] cols =vec4[] (vec4(85,205,252,255),vec4(247,168,184,255),vec4(255),vec4(247,168,184,255),vec4(85,205,252,255));       
+vec3 DirLightF(dirLight dir, vec3 norm, vec3 viewDir, vec3 color)
+{
+    vec3 lightDir = normalize(dir.dir);
 
-    int arrLength = 5;
+    float dif = max(dot(norm,lightDir),0.0);
     
-    if(ColNum == 1) 
-        return cols[0];
-        
-    float cstep1 = 1.0 / float(ColNum - 1);//Num of subgradients = num of colors - 1
-    
-    for(int i = 1; i < ColNum; i++)
-    {
-        if(coord < cstep1 * float(i))
-        return mix(cols[int(mod(float(i-1),float(arrLength)))],cols[int(mod(float(i),float(arrLength)))], coord / cstep1 - float (i - 1));
-    }    
-    return vec4(coord);
+    vec3 reflDir= reflect(-lightDir,norm);
+    float spec = pow(max(dot(viewDir,reflDir),0.0), 10.0);
+
+    vec3 amb = dir.ambient * color;
+    vec3 diffuse = dir.diffuse * dif * color;
+    vec3 specular = dir.specular * spec * color;
+
+    return amb + diffuse + specular;
+}
+
+vec3 pointLight(PointLight light,vec3 norm, vec3 pos, vec3 viewDir,vec3 color)
+{
+    vec3 lightDir = normalize(light.position - pos);
+
+    float dif = max(dot(norm,lightDir),0.0);
+    vec3 reflDir = reflect(-lightDir,norm);   
+    float spec = pow(max(dot(viewDir,reflDir),0.0),10.0);
+
+    float dist = length(light.position - pos);
+    float attenuation = 1.0 / (light.constant + light.linear * dist + light.quadratic * dist * dist);
+
+    vec3 amb = light.ambient * color * attenuation;
+    vec3 diffuse = light.diffuse * dif * color* attenuation;
+    vec3 specular = light.specular * spec * color* attenuation;
+
+    return amb * diffuse * specular;
 }
 
 void main()
 {
-	vec4 col = vec4(1);
-    vec3 sun = vec3(0,1,-1);
-    col *= max(.2, dot(Norm,sun));
-  
+	vec3 col = vec3(1);
+    vec3 vDir = normalize(camPos - Pos);
+
+	vec3 res = DirLightF(DirLight,Norm,vDir, col);
+    for(int i = 0; i < LightNum; i++)
+    res += pointLight(lights[i],Norm,Pos,vDir,col);
+        
     
-    FragColor = col;
+    FragColor = vec4(res,1.0);
 }

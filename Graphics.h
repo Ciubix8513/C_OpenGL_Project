@@ -6,21 +6,6 @@
 #include "FileLoader.h"
 #include "global.h"
 #include <time.h>
-// extern GLFWwindow *wnd;
-// extern UINT VBO;
-// extern UINT VAO;
-// extern UINT EBO;
-// extern UINT texture;
-// extern UINT ind_size;
-// extern long long prevTime;
-// extern double dT;
-// extern long long startT;
-// extern mat4 proj, camera;
-// extern vec2 res;
-// extern Camera cam;
-// extern UINT ShaderProg;
-// extern unsigned int* ind;
-//Shader s;
 int InitWindow(int height, int width,char * title);
 int InitOpenGL();
 
@@ -36,7 +21,9 @@ void Cleanup();
 
 void LoadTextureShaderData(Material *self);
 void LoadShaderData(Material *self);
+void LoadShaderDataEmpty(Material *self);
 
+void LightMovement();
 
 uint32_t getTick();
 

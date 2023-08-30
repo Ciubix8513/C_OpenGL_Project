@@ -6,13 +6,13 @@ void DelMesh(Mesh* m)
 	free(m->vertices);
 	free(m);
 }
-int equals(vec3i a, vec3i b)
+int equals(const vec3i a,const vec3i b)
 {
 	
 	return a.x == b.x && a.y == b.y && a.z == b.z;
 }
 
-int LoadOBJModel(char* fileN, Mesh* meshO)
+int LoadOBJModel(const char* fileN, Mesh* meshO)
 {
 	FILE* file;
 		
@@ -295,7 +295,7 @@ end:
 	return 1;
 }
 
-void SaveMDL(Mesh m, char* path)
+void SaveMDL(Mesh m, const char* path)
 {
 	FILE* f;
 	f = fopen(path,"wb");
@@ -319,7 +319,7 @@ void SaveMDL(Mesh m, char* path)
 	fclose(f);
 }
 
-int LoadMDL(char* path, Mesh* meshO)
+int LoadMDL(const char* path, Mesh* meshO)
 {
 	FILE* f;
 	f = fopen(path,"rb");
@@ -365,7 +365,7 @@ int LoadMDL(char* path, Mesh* meshO)
 	return 1;
 }
 
-unsigned char* LoadBMP(char* file,int* h,int* w, unsigned char * bpp,int switchRB)
+unsigned char* LoadBMP(const char* file,int* h,int* w, unsigned char * bpp,int switchRB)
 {
 	FILE* f;
 	f = fopen(file,"rb");

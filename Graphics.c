@@ -11,14 +11,32 @@ long long prevTime, startT;
 double dT;
 vec2 res;
 
-void TestFunc(Material);
+DirLight dirLight;
+
+int dirLightAngleY;
+int dirLightAngleZX;
+
+Light *lights;
+size_t lightCount;
+
+uint LightBuff, DirLightBuff;
 
 int InitOpenGL()
 {
+	dirLightAngleY = 90;
+	dirLightAngleZX = 180;
+	// dirLight = Vec3(0, 1, -1);
+	dirLight.direction = Vec3(sin(dirLightAngleZX * deg2rad), sin(deg2rad * dirLightAngleY), cos(deg2rad * dirLightAngleZX));
+	dirLight.ambient =Vec3(.3f,.3f,.3f);
+	dirLight.diffuse = Vec3(1,1,1);
+	dirLight.specular = Vec3(1,1,1);
+
 	glewInit();
 	glClearColor(0.257f, .711f, .957f, 1.0f);
 
-	// Set up viewport
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -34,40 +52,73 @@ int InitOpenGL()
 	res = Vec2(w, h);
 
 	glEnable(GL_MULTISAMPLE);
+	// Filling lights
+	// lightCount = 4;
+	// lights = calloc(lightCount, sizeof(Light));
+	// lights[0].position = Vec3(2,2,2);
+	// lights[0].distance = 2;
+	// lights[1].position = Vec3(2,2,-2);
+	// lights[1].distance = 2;
+	// lights[2].position = Vec3(2,-2,2);
+	// lights[2].distance = 2;
+	// lights[3].position = Vec3(-2,2,2);
+	// lights[3].distance = 2;
+
+	// // Generating light buff
+	// glGenBuffers(1, &LightBuff);
+	// glBindBuffer(GL_SHADER_STORAGE_BUFFER, LightBuff);
+	// glBufferData(GL_SHADER_STORAGE_BUFFER, lightCount * sizeof(Light), lights, GL_STATIC_DRAW);
+	// glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, LightBuff);
+
+	 glGenBuffers(1, &DirLightBuff);
+	 glBindBuffer(GL_UNIFORM_BUFFER, DirLightBuff);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(DirLight),&dirLight, GL_STATIC_DRAW);
+	 glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	// glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, LightBuff);
+
 	return s && s3;
 }
 
 int SetupModels()
 {
-	modelsSize = 2;
+	modelsSize = 3;
 	models = calloc(modelsSize, sizeof(Model));
 
-	models[0].transform.position = Vec3(0,2,0);
-	models[0].transform.scale = Vec3(1,1,1);
-	models[0].transform.rotation = Vec3(0,0,0);
+	models[0].transform.position = Vec3(0, 2, 0);
+	models[0].transform.scale = Vec3(1, 1, 1);
+	models[0].transform.rotation = Vec3(0, 0, 0);
 	models[0].material = materials;
 
-	models[1].transform.position = Vec3(0,0,0);
-	models[1].transform.scale = Vec3(1,1,1);
-	models[1].transform.rotation = Vec3(0,0,0);
+	models[1].transform.position = Vec3(0, 0, 0);
+	models[1].transform.scale = Vec3(1, 1, 1);
+	models[1].transform.rotation = Vec3(0, 0, 0);
 	models[1].material = materials + 1;
+
+	models[2].transform.position = Vec3(0, 0, 0);
+	models[2].transform.scale = Vec3(.1, .1, .1);
+	models[2].transform.rotation = Vec3(0, 0, 0);
+	models[2].material = materials + 2;
 	//  TODO add model filename to the struct and make it similar to the shader setup
-	return LoadModel("Res/blahaj1.mdl", &models[0]) && LoadModel("Res/Ground.mdl", &models[1]);
+	return LoadModel("Res/blahaj1.mdl", &models[0]); //&& LoadModel("Res/Ground.mdl", &models[1]) && LoadModel("Res/Sphere.mdl", &models[2]);
 }
 int SetupMaterials()
 {
 	// Manual setup (for now at least)
-	materialsSize = 2;
-	materials = calloc(materialsSize, sizeof(Material));	
+	materialsSize = 3;
+	materials = calloc(materialsSize, sizeof(Material));
 
 	materials[0].vFileName = "Res/shader.vert";
 	materials[1].vFileName = "Res/shader.vert";
+	materials[2].vFileName = "Res/shader.vert";
 
 	materials[0].fFileName = "Res/texture.frag\0";
 	materials[1].fFileName = "Res/shader.frag";
+	materials[2].fFileName = "Res/sun.frag";
 
 	materials[0].LoadData = &LoadTextureShaderData;
 	materials[1].LoadData = &LoadShaderData;
+	materials[2].LoadData = &LoadShaderData;
 
 	materials[0].samplerArrSize = 1;
 	materials[0].samplerArr = calloc(materials[0].samplerArrSize, sizeof(uint));
@@ -77,7 +128,6 @@ int SetupMaterials()
 			return 0;
 	setupTexture("Res/blahaj.bmp", materials[0].samplerArr);
 	return 1;
-	
 }
 
 int LoadModel(const char *filename, Model *model)
@@ -123,21 +173,21 @@ int setupShader(Material *material)
 	{
 		printf("Was not able to open %s\n", material->vFileName);
 		return 0;
-	}	
+	}
 	fseek(f, 0, SEEK_END);
 	int l = ftell(f);
 	rewind(f);
-	
+
 	char *vFile = malloc(l);
 	memset(vFile, 0, l);
 	fread(vFile, 1, l, f);
-	
+
 	fclose(f);
-	vFile[l] = '\0';	
-	uint vert = glCreateShader(GL_VERTEX_SHADER);	
-	glShaderSource(vert, 1,&vFile, NULL);
-	free(vFile);	
-	
+	vFile[l] = '\0';
+	uint vert = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vert, 1, &vFile, NULL);
+	free(vFile);
+
 	f = fopen(material->fFileName, "r");
 	if (f == NULL)
 	{
@@ -179,11 +229,12 @@ int setupShader(Material *material)
 	if (Comp == GL_FALSE)
 	{
 		int mL = 0;
-		glGetShaderiv(vert, GL_INFO_LOG_LENGTH, &mL);
+		glGetShaderiv(frag, GL_INFO_LOG_LENGTH, &mL);
+		
 		char *log = malloc(mL);
-
-		glGetShaderInfoLog(frag, mL, &mL, log);
-		printf("frag Log = %s", log);
+		
+		glGetShaderInfoLog(frag, mL, &mL, log);		
+		printf("%s Log = %s\n\nlog size = %i\n",material->fFileName, log,mL);
 		free(log);
 		return 0;
 	}
@@ -243,19 +294,28 @@ void Render()
 	mat4 proj = PerspectiveProj(FreeCam.FOV, res.x / res.y, FreeCam.ScreenNear, FreeCam.ScreenFar);
 	mat4 camera = LookAtCam(FreeCam);
 
-	//glUniform1f(3, t / 1000.0f);
+	// glUniform1f(3, t / 1000.0f);
+	glBindBuffer(GL_UNIFORM_BUFFER,DirLightBuff);
+	glBufferSubData(GL_UNIFORM_BUFFER,0,sizeof(vec3),&dirLight.direction);
+	glBindBuffer(GL_UNIFORM_BUFFER,0);
 
 	for (size_t i = 0; i < modelsSize; i++)
 	{
-		
+
 		glUseProgram(models[i].material->ShaderProg);
 		mat4 world = STransformMat(&models[i].transform);
-
 
 		glUniformMatrix4fv(0, 1, 0, &proj);
 		glUniformMatrix4fv(1, 1, 0, &camera);
 		glUniformMatrix4fv(2, 1, 1, &world);
+    glUniform1f(3,t/ 1000.0f);
 
+		// glUniform3fv(3,1,&FreeCam.transform.position);
+		//glUniform3fv(3, 1, &dirLight);
+
+		//glUniform1i(4,lightCount);
+
+		
 		models[i].material->LoadData(models[i].material);
 		glBindVertexArray(models[i].VAO);
 
@@ -299,9 +359,9 @@ void Cleanup()
 {
 	// Cleanup materials
 	for (size_t i = 0; i < materialsSize; i++)
-	{		
-		glDeleteTextures(materials[i].samplerArrSize, materials[i].samplerArr);		
-		glDeleteProgram(materials[i].ShaderProg);			
+	{
+		glDeleteTextures(materials[i].samplerArrSize, materials[i].samplerArr);
+		glDeleteProgram(materials[i].ShaderProg);
 		free(materials[i].intArr);
 		free(materials[i].floatArr);
 		free(materials[i].float2Arr);
@@ -316,8 +376,11 @@ void Cleanup()
 		glDeleteBuffers(1, &models[i].EBO);
 		glDeleteVertexArrays(1, &models[i].VAO);
 	}
+
+	glDeleteBuffers(1,(const unsigned int*)LightBuff);
 	free(models);
 	free(materials);
+	//free(lights);
 
 	glfwTerminate();
 }
@@ -329,6 +392,42 @@ void LoadTextureShaderData(Material *self)
 }
 
 void LoadShaderData(Material *self)
+{	
+	glUniformBlockBinding(self->ShaderProg,0,0);
+	glBindBufferBase(GL_UNIFORM_BUFFER,0,DirLightBuff);
+	
+	return;
+}
+void LoadShaderDataEmpty(Material *self)
 {
 	return;
+}
+
+void LightMovement()
+{
+	if (glfwGetKey(wnd, GLFW_KEY_UP))
+	{
+		dirLightAngleY++;
+		dirLight.direction = Vec3(sin(dirLightAngleZX * deg2rad), sin(deg2rad * dirLightAngleY), cos(deg2rad * dirLightAngleZX));
+	}
+	if (glfwGetKey(wnd, GLFW_KEY_DOWN))
+	{
+		dirLightAngleY--;
+		dirLight.direction = Vec3(sin(dirLightAngleZX * deg2rad), sin(deg2rad * dirLightAngleY), cos(deg2rad * dirLightAngleZX));
+	}
+	if (glfwGetKey(wnd, GLFW_KEY_LEFT))
+	{
+		dirLightAngleZX--;
+		dirLight.direction = Vec3(sin(dirLightAngleZX * deg2rad), sin(deg2rad * dirLightAngleY), cos(deg2rad * dirLightAngleZX));
+	}
+	if (glfwGetKey(wnd, GLFW_KEY_RIGHT))
+	{
+		dirLightAngleZX++;
+		dirLight.direction = Vec3(sin(dirLightAngleZX * deg2rad), sin(deg2rad * dirLightAngleY), cos(deg2rad * dirLightAngleZX));
+	}
+
+	models[2].transform.position = dirLight.direction;
+	models[2].transform.position.x *= 50;
+	models[2].transform.position.y *= 50;
+	models[2].transform.position.z *= 50;
 }

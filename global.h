@@ -122,6 +122,32 @@ typedef struct Model
 
 } Model;
 
+typedef struct DirLight
+{
+	vec3 direction;
+	float f3;
+	vec3 ambient;
+	float f2;
+	vec3 diffuse;
+	float f1;
+	vec3 specular;
+	float f;
+}DirLight;
+#pragma pack(push,1)
+typedef struct Light
+{
+	vec3 position;
+	float constant;
+	float linear;
+	float quadratic;
+
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+} Light;
+#pragma pack(pop)
+extern DirLight dirLight;
+
 extern Material* materials;
 extern size_t materialsSize;
 

@@ -50,9 +50,10 @@ void Frame()
 		UpdateCamera();
 		if (glfwGetKey(wnd, GLFW_KEY_R))
 			SetupMaterials();
-		//Should've added this A LONG time ago	
+		// Should've added this A LONG time ago
 		if (glfwGetKey(wnd, GLFW_KEY_LEFT_CONTROL) && glfwGetKey(wnd, GLFW_KEY_C))
-			glfwSetWindowShouldClose(wnd, 1);		
+			glfwSetWindowShouldClose(wnd, 1);
+		LightMovement();
 	}
 }
 

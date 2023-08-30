@@ -5,8 +5,7 @@ S_Input Input;
 void ScrollCallback(GLFWwindow *wnd, double xOffset, double yOffset)
 {
     Input.Mouse.wheelX = xOffset;
-    Input.Mouse.wheelY = yOffset;
-    printf("offset: %f,%f\n", xOffset, yOffset);
+    Input.Mouse.wheelY = yOffset;    
 }
 
 void ScrollProcessing()

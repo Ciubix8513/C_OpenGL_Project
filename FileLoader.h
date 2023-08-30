@@ -62,12 +62,12 @@ typedef struct BITMAPINFOHEADER
 
 void DelMesh(Mesh* m);
 
-int equals(vec3i a, vec3i b);
-int LoadOBJModel(char* file, Mesh* mesh);
-void SaveMDL(Mesh m, char* path);
-int LoadMDL(char* path, Mesh* mesh);
+int equals(const vec3i a,const vec3i b);
+int LoadOBJModel(const char* file, Mesh* mesh);
+void SaveMDL(const Mesh m,const char* path);
+int LoadMDL(const char* path, Mesh* mesh);
 
-unsigned char* LoadBMP(char* file, int* h, int* w, unsigned char* bpp, int switchRB);
+unsigned char* LoadBMP(const char* file, int* h, int* w, unsigned char* bpp, int switchRB);
 
 
 #endif

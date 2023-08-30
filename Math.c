@@ -312,6 +312,7 @@ mat4 TransformMat(vec3 pos, vec3 r, vec3 s)
 }
 
 // Made using wolfram Alpha, i would've never been able to do something like this
+// TODO change transformation order: m((scale -> rot) -> trans) => ((rot -> trans) -> scale)
 mat4 STransformMat(const Transform* t)
 {
 	float X =  t->rotation.x * deg2rad;

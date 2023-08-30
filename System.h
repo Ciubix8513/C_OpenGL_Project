@@ -11,7 +11,7 @@ int Run();
 void Frame();
 void Exit();
 
-//GLFWwindowsizefun WindowResizeCallback(GLFWwindow* window,GLFWwindowsizefun cbfun);
+
 void WindowResizeCallback(GLFWwindow *window,int x,int y);
 
 #endif
